@@ -49,11 +49,13 @@ function addon:UpdatePlayerLocation()
     local subzone = GetPlayerSubZone() 
     local mapID = addon.currentMapID or C_Map.GetBestMapForUnit("player") 
     local englishName = GetEnglishLocationName(subzone, mapID) 
-     
-    if englishName ~= "Unknown" then 
-        mainFrame.location:SetText(self:GetLocalizedText("You are at: %s", englishName)) 
+    local bgConfig = addon.bgConfigs[mapID]
+
+    if englishName ~= "Unknown" and bgConfig then 
+        local buttonLabel = bgConfig.buttons[englishName] or englishName
+        mainFrame.location:SetText(self:GetLocalizedText("You are at: %s", buttonLabel)) 
         for _, button in ipairs(locationButtons) do 
-            if button:GetText() == englishName then 
+            if button:GetText() == buttonLabel then 
                 button:SetButtonState("PUSHED", 1) 
                 selectedLocationButton = button 
             else 
@@ -67,10 +69,13 @@ function addon:UpdatePlayerLocation()
             selectedLocationButton = nil 
         end 
     end 
-     
+
     addon.Debug:Print("Current subzone: %s", subzone) 
     addon.Debug:Print("English location name: %s", englishName) 
-end 
+    if bgConfig and bgConfig.buttons[englishName] then
+        addon.Debug:Print("Button label: %s", bgConfig.buttons[englishName])
+    end
+end
 
 -- Create compact button function 
 local function CreateCompactButton(name, parent, width, height, point, relativeFrame, relativePoint, xOffset, yOffset, row) 
