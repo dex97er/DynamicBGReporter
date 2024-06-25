@@ -1,6 +1,14 @@
 local addonName, addon = ...
 addon = LibStub("AceAddon-3.0"):NewAddon(addon, addonName, "AceEvent-3.0", "AceConsole-3.0", "AceTimer-3.0")
 
+-- Simple debug structure that does nothing if debug.lua is not loaded
+addon.Debug = {
+    Print = function() end,
+    Toggle = function() end,
+    BGDevCommand = function() end,
+    enabled = false
+}
+
 -- Load the Capture module
 addon.Capture = addon.Capture or {}
 
@@ -21,12 +29,10 @@ local function GetEnglishLocationName(subzone, mapID)
 
     local lang = GetLocale()
     
-    -- Überprüfen Sie zuerst die Übersetzungen für die aktuelle Sprache
     if addon.subzoneTranslations[lang] and addon.subzoneTranslations[lang][subzone] then
         return addon.subzoneTranslations[lang][subzone]
     end
     
-    -- Wenn keine Übersetzung gefunden wurde, überprüfen Sie die englischen Subzonen
     for englishName, translations in pairs(config.subzones) do
         if tContains(translations, subzone) then
             return englishName
@@ -35,6 +41,7 @@ local function GetEnglishLocationName(subzone, mapID)
     
     return "Unknown"
 end
+
 function addon:UpdatePlayerLocation()
     local subzone = GetPlayerSubZone()
     local mapID = addon.currentMapID or C_Map.GetBestMapForUnit("player")
@@ -51,15 +58,15 @@ function addon:UpdatePlayerLocation()
             end
         end
     else
-        mainFrame.locationwd:SetText(self:GetLocalizedText("Location unknown"))
+        mainFrame.location:SetText(self:GetLocalizedText("Location unknown"))
         if selectedLocationButton then
             selectedLocationButton:SetButtonState("NORMAL")
             selectedLocationButton = nil
         end
     end
     
-    print("Debug: Current subzone:", subzone)
-    print("Debug: English location name:", englishName)
+    addon.Debug:Print("Current subzone: %s", subzone)
+    addon.Debug:Print("English location name: %s", englishName)
 end
 
 -- Create compact button function
@@ -80,8 +87,7 @@ local function CreateCompactButton(name, parent, width, height, point, relativeF
             selectedPlayerCountButton = self
             addon:SendBGMessage()
         end
-	
-        
+    
         self:SetButtonState("PUSHED", 1)
     end)
     
@@ -91,7 +97,7 @@ end
 -- Create main frame function
 function addon:CreateCompactMainFrame()
     local frame = CreateFrame("Frame", "DynamicBGReporterFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(275, 130)  -- Increased height to accommodate the checkbox
+    frame:SetSize(275, 130)
     frame:SetPoint("CENTER")
     frame:SetMovable(true)
     frame:EnableMouse(true)
@@ -106,7 +112,6 @@ function addon:CreateCompactMainFrame()
     frame.location = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.location:SetPoint("TOP", frame.title, "BOTTOM", 0, -5)
     
-    -- Create the checkbox
     frame.captureAnnouncer = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
     frame.captureAnnouncer:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -95)
     frame.captureAnnouncer:SetSize(24, 24)
@@ -135,13 +140,12 @@ end
 -- Update buttons function
 function addon:UpdateCompactButtons()
     local mapID = addon.currentMapID or C_Map.GetBestMapForUnit("player")
-    print("Debug: Current MapID:", mapID) 
+    addon.Debug:Print("Current MapID: %s", mapID)
     local config = addon.bgConfigs[mapID]
     
     if config then
-        print("Debug: Battleground found:", config.name)
+        addon.Debug:Print("Battleground found: %s", config.name)
         mainFrame.title:SetText(config.name .. " Location Reporter")
-		
         
         for i, location in ipairs(config.locations) do
             if not locationButtons[i] then
@@ -167,7 +171,7 @@ function addon:UpdateCompactButtons()
         
         mainFrame:Show()
     else
-        print("Debug: No matching Battleground config found")
+        addon.Debug:Print("No matching Battleground config found")
         mainFrame.title:SetText(self:GetLocalizedText("Not in Battleground"))
         mainFrame.location:SetText("")
         for _, button in ipairs(locationButtons) do
@@ -180,15 +184,13 @@ function addon:UpdateCompactButtons()
     
     addon.currentSubzone = GetPlayerSubZone()
     
-    -- Update the player location
     self:UpdatePlayerLocation()
     
-    -- Show the frame regardless of player's location
     mainFrame:Show()
     
-    print("Dev Mode: Battleground set to " .. (config and config.name or "Unknown"))
+    addon.Debug:Print("Battleground set to %s", (config and config.name or "Unknown"))
     if addon.currentSubzone then
-        print("Dev Mode: Subzone set to " .. addon.currentSubzone)
+        addon.Debug:Print("Subzone set to %s", addon.currentSubzone)
     end
 end
 
@@ -198,7 +200,6 @@ function addon:UpdateCaptureAnnouncerCheckbox()
     end
 end
 
--- New function to toggle the main frame
 function addon:ToggleMainFrame()
     if mainFrame:IsShown() then
         mainFrame:Hide()
@@ -209,7 +210,17 @@ function addon:ToggleMainFrame()
     end
 end
 
--- Initialize function
+function addon:ResetLocationButtons()
+    if selectedLocationButton then
+        selectedLocationButton:SetButtonState("NORMAL")
+        selectedLocationButton = nil
+    end
+    if selectedPlayerCountButton then
+        selectedPlayerCountButton:SetButtonState("NORMAL")
+        selectedPlayerCountButton = nil
+    end
+end
+
 function addon:OnInitialize()
     self.db = LibStub("AceDB-3.0"):New("DynamicBGReporterDB", {
         profile = {
@@ -220,21 +231,18 @@ function addon:OnInitialize()
     mainFrame = self:CreateCompactMainFrame()
     self:UpdateCompactButtons()
     
-    -- Set the initial state of the checkbox
     mainFrame.captureAnnouncer:SetChecked(self.db.profile.captureAnnouncerEnabled)
     
-    -- Register the /bgdev command
     self:RegisterChatCommand("bgdev", "BGDevCommand")
-    
-    -- Register the new /dbg command
     self:RegisterChatCommand("dbg", "ToggleMainFrame")
+    self:RegisterChatCommand("bgdebug", "BGDebugCommand")
     
-    -- Hide the main frame initially
     mainFrame:Hide()
 end
+
 function addon:SendBGMessage()
     if not IsInBattleground() then
-        print("Debug: Player is not in a battleground")
+        addon.Debug:Print("Player is not in a battleground")
         return
     end
 
@@ -242,13 +250,14 @@ function addon:SendBGMessage()
         local location = selectedLocationButton:GetText()
         local playerCount = selectedPlayerCountButton:GetText()
         local message = string.format("Location: %s, Player Count: %s", location, playerCount)
-        SendChatMessage(message, "INSTANCE_CHAT")  -- Verwende "INSTANCE_CHAT" für Schlachtfeld- und Dungeon-Chats
-        print("Message sent to instance chat:", message)
+        SendChatMessage(message, "INSTANCE_CHAT")
+        addon.Debug:Print("Message sent to instance chat: %s", message)
     else
-        print("Debug: No location or player count selected")
+        addon.Debug:Print("No location or player count selected")
+        addon.Debug:Print("selectedLocationButton: %s", tostring(selectedLocationButton))
+        addon.Debug:Print("selectedPlayerCountButton: %s", tostring(selectedPlayerCountButton))
     end
 end
-
 
 function addon:OnEnable()
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -261,17 +270,16 @@ function addon:OnEnable()
     self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE")
     self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE")
     self:UpdateCompactButtons()
-	self:UpdatePlayerLocation()
-  
+    self:UpdatePlayerLocation()
     self:UpdateCaptureAnnouncerCheckbox()
 end
 
 function addon:PLAYER_ENTERING_WORLD()
-    -- Reset dev mode when entering a new world
     addon.isDevMode = false
     addon.currentMapID = nil
     addon.currentSubzone = nil
     
+    self:ResetLocationButtons()
     self:UpdateCompactButtons()
     self:UpdatePlayerLocation()
 end
@@ -304,5 +312,12 @@ function addon:CaptureUpdate()
     self.Capture:Update()
 end
 
--- Return the addon table at the end of the file
+function addon:BGDebugCommand(input)
+    self.Debug:Toggle()
+end
+
+function addon:BGDevCommand(input)
+    self.Debug:BGDevCommand(input)
+end
+
 return addon
