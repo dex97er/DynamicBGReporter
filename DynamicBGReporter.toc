@@ -18,3 +18,4 @@ localization.lua
 config.lua
 capture.lua
 core.lua
+AutoRelease.lua
