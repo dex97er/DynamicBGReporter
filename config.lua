@@ -54,26 +54,35 @@ addon.bgConfigs = {
             ["Mines"] = {"Minen", "Mines", "Mines", "Minas", "Рудник"}
         }
     },
-    -- Isle of Conquest
-    [4710] = {
-        name = "Isle of Conquest",
-        locations = {"Hangar", "Workshop", "Docks", "Refinery", "Quarry"},
-        areas = {
-            [1] = "Hangar",
-            [2] = "Workshop",
-            [3] = "Docks",
-            [4] = "Refinery",
-            [5] = "Quarry"
+    World of Warcraft Battleground Configuration
+
+local addonName, addon = ... 
+addon = addon or {}  -- Stelle sicher, dass die addon-Tabelle existiert
+addon.bgConfigs = {
+    -- ... (andere Schlachtfeld-Konfigurationen bleiben unverändert)
+    
+    -- Isle of Conquest (überarbeitet)
+    [4710] = { 
+        name = "Isle of Conquest", 
+        locations = {"Hangar", "Workshop", "Docks", "Refinery", "Quarry", "Alliance Keep", "Horde Keep"}, 
+        areas = { 
+            [1] = "Hangar", 
+            [2] = "Workshop", 
+            [3] = "Docks", 
+            [4] = "Refinery", 
+            [5] = "Quarry",
+            [6] = "Alliance Keep",
+            [7] = "Horde Keep"
+        }, 
+        subzones = { 
+            ["Hangar"] = {"Hangar", "Hangar", "Hangar", "Hangar", "Ангар"}, 
+            ["Workshop"] = {"Werkstatt", "Workshop", "Atelier", "Taller", "Мастерская"}, 
+            ["Docks"] = {"Docks", "Docks", "Docks", "Muelles", "Доки"}, 
+            ["Refinery"] = {"Raffinerie", "Refinery", "Raffinerie", "Refinería", "Нефтезавод"}, 
+            ["Quarry"] = {"Steinbruch", "Quarry", "Carrière", "Cantera", "Каменоломня"},
+            ["Alliance Keep"] = {"Allianzfestung", "Alliance Keep", "Donjon de l'Alliance", "Fortaleza de la Alianza", "Крепость Альянса"},
+            ["Horde Keep"] = {"Hordefestung", "Horde Keep", "Donjon de la Horde", "Fortaleza de la Horda", "Крепость Орды"}
         },
-        subzones = {
-            ["Hangar"] = {"Hangar", "Hangar", "Hangar", "Hangar", "Ангар"},
-            ["Workshop"] = {"Werkstatt", "Workshop", "Atelier", "Taller", "Мастерская"},
-            ["Docks"] = {"Docks", "Docks", "Docks", "Muelles", "Доки"},
-            ["Refinery"] = {"Raffinerie", "Refinery", "Raffinerie", "Refinería", "Нефтезавод"},
-            ["Quarry"] = {"Steinbruch", "Quarry", "Carrière", "Cantera", "Каменоломня"}
-        }
-    }
-}
 
 -- You can add other configuration variables here
 addon.playerCounts = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
